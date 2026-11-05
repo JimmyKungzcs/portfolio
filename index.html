@@ -343,7 +343,7 @@ dl.facts{margin:0;padding:8px 0}
 .ping{padding:24px;display:flex;flex-direction:column;gap:14px}
 .ping h3{font-family:var(--f-display);font-size:22px;margin:0}
 .ping p{margin:0;color:var(--muted);font-size:14.5px}
-.ping-pad{position:relative;flex:1;min-height:200px;border-radius:14px;border:0;cursor:pointer;display:grid;place-items:center;text-align:center;padding:18px;font-family:var(--f-display);font-weight:700;font-size:26px;line-height:1.25;color:#fff;background:var(--blue);transition:background .15s,transform .1s;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.ping-pad{position:relative;flex:1;min-height:200px;border-radius:14px;border:0;cursor:pointer;display:grid;place-items:center;text-align:center;padding:18px;font-family:var(--f-display);font-weight:700;font-size:26px;line-height:1.25;color:#fff;background:var(--blue);transition:transform .1s;user-select:none;-webkit-user-select:none;touch-action:manipulation}
 .ping-pad:active{transform:scale(.985)}
 .ping-pad small{display:block;font-family:var(--f-body);font-weight:500;font-size:14px;opacity:.85;margin-top:6px}
 .ping-pad[data-state="wait"]{background:var(--bad)}
@@ -700,7 +700,7 @@ footer kbd{font-family:var(--f-mono);padding:1px 6px;border:1px solid var(--line
       </div>
       <div class="panel ping reveal">
         <h3>วัด ping ของคุณ</h3>
-        <p>กดปุ่มเพื่อเริ่ม รอจนเป็นสีเขียวแล้วกดให้เร็วที่สุด</p>
+        <p>วัดความไวในการกดของคุณ ไม่ใช่ความเร็วเน็ต กดปุ่มเพื่อเริ่ม รอจนเป็นสีเขียวแล้วกดให้เร็วที่สุด คนทั่วไปทำได้ราว 250–350 ms</p>
         <button class="ping-pad" id="pingPad" type="button" data-state="idle">เริ่มทดสอบ<small>กดที่นี่</small></button>
         <div class="ping-stats"><div>ครั้งล่าสุด<b id="pingLast">–</b></div><div>ดีที่สุด<b id="pingBest">–</b></div></div>
       </div>
@@ -1118,14 +1118,15 @@ footer kbd{font-family:var(--f-mono);padding:1px 6px;border:1px solid var(--line
   const pad = $('#pingPad'); let pState = 'idle', pTimer, pStart = 0; let best = +store.get('jim-best-ping') || 0;
   if (best) $('#pingBest').textContent = best + ' ms';
   function setPad(state, main, sub){ pState = state; pad.dataset.state = state; pad.innerHTML = ''; pad.append(document.createTextNode(main)); if (sub){ const s = document.createElement('small'); s.textContent = sub; pad.append(s); } }
-  function grade(ms){ return ms < 200 ? 'ไฟเบอร์ออปติก' : ms < 280 ? 'สาย LAN' : ms < 380 ? 'Wi-Fi บ้าน' : ms < 550 ? 'เน็ตมือถือ 3G' : 'Dial-up 56k'; }
+  function grade(ms){ return ms < 230 ? 'ไฟเบอร์ออปติก' : ms < 300 ? 'สาย LAN' : ms < 400 ? 'Wi-Fi บ้าน' : ms < 550 ? 'เน็ตมือถือ 4G' : 'Dial-up 56k'; }
   pad.addEventListener('pointerdown', e => { e.preventDefault(); press(); });
   pad.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); press(); } });
   pad.addEventListener('click', e => { if (e.detail === 0) return; e.preventDefault(); });
   function press(){
     if (pState === 'idle' || pState === 'done' || pState === 'early'){
       setPad('wait', 'รอสัญญาณ...', 'อย่าเพิ่งกด รอให้เป็นสีเขียว');
-      pTimer = setTimeout(() => { setPad('go', 'กดเลย!', ''); pStart = performance.now(); }, 1200 + Math.random() * 2600);
+      // start the clock on the frame that actually paints the green pad, not before it
+      pTimer = setTimeout(() => { setPad('go', 'กดเลย!', ''); pStart = performance.now(); requestAnimationFrame(t => { pStart = t; }); }, 1200 + Math.random() * 2600);
     } else if (pState === 'wait'){
       clearTimeout(pTimer); setPad('early', 'Packet loss!', 'กดเร็วไป กดอีกครั้งเพื่อลองใหม่');
     } else if (pState === 'go'){
